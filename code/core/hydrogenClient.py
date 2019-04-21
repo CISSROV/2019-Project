@@ -12,8 +12,8 @@ trimUp = {
 justPressed1 = {
     'A': False, # claw
     'B': False, # claw
-    'X': False, # shift
-    'Y': False, #
+    'X': False, # autopilot on/off
+    'Y': False, # autopilot on/off
     'LB': False, # trim up
     'RB': False # trim down
 }
