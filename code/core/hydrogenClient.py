@@ -4,6 +4,35 @@ import select
 import pygame
 import time
 
+# autopilot
+def getDepth():
+    global INITDEPTH
+    global depthHistory
+    # averages the value over the past 5 readings
+    depthHistory.append(depthSensor.getDepth())
+    if len(depthHistory) > 5:
+        depthHistory.pop(0)
+    return (sum(depthHistory) / len(depthHistory)) - INITDEPTH
+
+autopilotOn = False
+import depthSensor
+
+tmp = []
+for _ in range(10):
+    tmp.append(depthSensor.getDepth())
+    time.sleep(0.05)
+INITDEPTH = sum(tmp) / len(tmp) # in cm, intial above water reading
+print(tmp)
+depthHistory = tmp[-5:] # past 5 readings
+del tmp
+
+desiredDepth = 0 # in cm, relative to INITDEPTH
+
+def autopilot():
+    currDepth = getDepth()
+    deltaDepth = desiredDepth - currDepth
+
+
 port = '/dev/ttyACM0'
 
 import pyfirmata
@@ -63,12 +92,12 @@ trimUp = {
 }
 
 justPressed1 = {
-    'A': False,
-    'B': False,
-    'X': False,
-    'Y': False,
-    'LB': False,
-    'RB': False
+    'A': False, # claw
+    'B': False, # claw
+    'X': False, # shift
+    'Y': False, #
+    'LB': False, # trim up
+    'RB': False # trim down
 }
 
 justPressed2 = {
