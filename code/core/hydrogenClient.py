@@ -4,6 +4,29 @@ import select
 import pygame
 import time
 
+trimUp = {
+    'left': 0.0,
+    'right': 0.0
+}
+
+justPressed1 = {
+    'A': False, # claw
+    'B': False, # claw
+    'X': False, # shift
+    'Y': False, #
+    'LB': False, # trim up
+    'RB': False # trim down
+}
+
+justPressed2 = {
+    'A': False,
+    'B': False,
+    'X': False,
+    'Y': False,
+    'LB': False,
+    'RB': False
+}
+
 # autopilot
 def getDepth():
     global INITDEPTH
@@ -29,8 +52,13 @@ del tmp
 desiredDepth = 0 # in cm, relative to INITDEPTH
 
 def autopilot():
+    global trimUp
     currDepth = getDepth()
-    deltaDepth = desiredDepth - currDepth
+    deltaDepth = desiredDepth - currDepth # pos if above, neg if below
+    if (abs(deltaDepth) < 5):
+        correctionThrust = 3 * deltaDepth
+        trimUp['left'] = correctionThrust
+        trimUp['right'] = correctionThrust
 
 
 port = '/dev/ttyACM0'
@@ -86,38 +114,30 @@ def move10(a):
 def move12(a):
     pin12.write(a)
 
-trimUp = {
-    'left': 0.0,
-    'right': 0.0
-}
-
-justPressed1 = {
-    'A': False, # claw
-    'B': False, # claw
-    'X': False, # shift
-    'Y': False, #
-    'LB': False, # trim up
-    'RB': False # trim down
-}
-
-justPressed2 = {
-    'A': False,
-    'B': False,
-    'X': False,
-    'Y': False,
-    'LB': False,
-    'RB': False
-}
 
 def buttonPressed(button, num):
-    global trimUp
+    global trimUp, autopilotOn
     if num == 1:
-        if button == 'LB':
-            trimUp['left'] += 1
-            trimUp['right'] += 1
-        elif button == 'RB':
-            trimUp['left'] -= 1
-            trimUp['right'] -= 1
+        if not autopilotOn:
+            if button == 'LB':
+                trimUp['left'] += 1
+                trimUp['right'] += 1
+            elif button == 'RB':
+                trimUp['left'] -= 1
+                trimUp['right'] -= 1
+            elif button == 'X':
+                autopilotOn = True
+                print('Autopilot ON')
+        else:
+            # autopilot
+            global desiredDepth
+            if button == 'LB':
+                desiredDepth -= 5
+            elif button == 'RB':
+                desiredDepth += 5
+            elif button == 'Y':
+                autopilotOn = False
+                print('Autopilot OFF')
 
 ########Multiple clients connect to a server than send and receive data to all clients
 def chat_client(host='192.168.1.2', port=9009):
@@ -278,6 +298,9 @@ def chat_client(host='192.168.1.2', port=9009):
                     #m4 = 90-forwardval-strafeval
 
                     global trimUp
+                    global autopilotOn
+                    if autopilotOn:
+                        autopilot()
 
                     motor_up_left  = 93 + trimUp['left'] + yRight
                     motor_up_right = 93 + trimUp['right'] + yRight
