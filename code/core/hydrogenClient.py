@@ -53,10 +53,17 @@ if autopilotEnabled:
         global trimUp
         currDepth = getDepth()
         deltaDepth = desiredDepth - currDepth # pos if above, neg if below
-        if (abs(deltaDepth) < 5):
+        if (abs(deltaDepth) < 6):
             correctionThrust = 3 * deltaDepth
             trimUp['left'] = correctionThrust
             trimUp['right'] = correctionThrust
+        else:
+            if deltaDepth < 0:
+                trimUp['left'] = -50
+                trimUp['right'] = -50
+            else deltaDepth > 0:
+                trimUp['left'] = 50
+                trimUp['right'] = 50
 
 
 port = '/dev/ttyACM0'
