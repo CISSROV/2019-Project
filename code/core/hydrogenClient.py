@@ -27,38 +27,36 @@ justPressed2 = {
     'RB': False
 }
 
+# note -> each depthSensor.getDepth() call reads data 6 times
+
 # autopilot
-def getDepth():
-    global INITDEPTH
-    global depthHistory
-    # averages the value over the past 5 readings
-    depthHistory.append(depthSensor.getDepth())
-    if len(depthHistory) > 5:
-        depthHistory.pop(0)
-    return (sum(depthHistory) / len(depthHistory)) - INITDEPTH
+autopilotOn = True
 
-autopilotOn = False
-import depthSensor
+autopilotEnabled = False
 
-tmp = []
-for _ in range(10):
-    tmp.append(depthSensor.getDepth())
-    time.sleep(0.05)
-INITDEPTH = sum(tmp) / len(tmp) # in cm, intial above water reading
-print(tmp)
-depthHistory = tmp[-5:] # past 5 readings
-del tmp
+if autopilotEnabled:
+    import depthSensor
 
-desiredDepth = 0 # in cm, relative to INITDEPTH
+    def getDepth():
+        global depthHistory
+        # averages the value over the past 5 readings
+        depthHistory.append(depthSensor.getDepth())
+        if len(depthHistory) > 5:
+            depthHistory.pop(0)
+        return (sum(depthHistory) / len(depthHistory))
 
-def autopilot():
-    global trimUp
-    currDepth = getDepth()
-    deltaDepth = desiredDepth - currDepth # pos if above, neg if below
-    if (abs(deltaDepth) < 5):
-        correctionThrust = 3 * deltaDepth
-        trimUp['left'] = correctionThrust
-        trimUp['right'] = correctionThrust
+    depthHistory = [getDepth() for _ in range(5)]
+
+    desiredDepth = 0 # in cm, relative to INITDEPTH
+
+    def autopilot():
+        global trimUp
+        currDepth = getDepth()
+        deltaDepth = desiredDepth - currDepth # pos if above, neg if below
+        if (abs(deltaDepth) < 5):
+            correctionThrust = 3 * deltaDepth
+            trimUp['left'] = correctionThrust
+            trimUp['right'] = correctionThrust
 
 
 port = '/dev/ttyACM0'
@@ -125,7 +123,7 @@ def buttonPressed(button, num):
             elif button == 'RB':
                 trimUp['left'] -= 1
                 trimUp['right'] -= 1
-            elif button == 'X':
+            elif button == 'X' and autopilotEnabled:
                 autopilotOn = True
                 print('Autopilot ON')
         else:
@@ -135,9 +133,9 @@ def buttonPressed(button, num):
                 desiredDepth -= 5
             elif button == 'RB':
                 desiredDepth += 5
-            elif button == 'Y':
+            elif button == 'Y' and autopilotEnabled:
                 autopilotOn = False
-                print('Autopilot OFF')
+                print('Autopilot OFF')}
 
 ########Multiple clients connect to a server than send and receive data to all clients
 def chat_client(host='192.168.1.2', port=9009):
@@ -299,7 +297,7 @@ def chat_client(host='192.168.1.2', port=9009):
 
                     global trimUp
                     global autopilotOn
-                    if autopilotOn:
+                    if autopilotOn and autopilotEnabled:
                         autopilot()
 
                     motor_up_left  = 93 + trimUp['left'] + yRight

@@ -11,13 +11,25 @@ import time
 s = ms5803py.Sensor()
 surface = 0 # 1007   # 1013.25 mBar
 
-surface = getDepth()
+def raw_getDepth():
+    avg_press = 0
+    for _ in range(6):
+        press, temp = s.read()
+        avg_press += press
+        time.sleep(0.01)
+
+    return avg_press / 30.0
+
+surface = [raw_getDepth() for _ in range(10)]
+surface = sum(surface) / float(len(surface))
+
+print(surface)
 
 def getDepth():
     ave_pressure = 0.0
     ave_temp = 0.0
     ave_depth = 0.0
-    for i in range(30):
+    for i in range(6):
         press, temp = s.read()
         press = press * 10.0
         rho = 1000*(1 - (temp+288.9414)/(508929.2*(temp+68.12963))*(temp-3.9863)**2)  #freshwater density
@@ -25,6 +37,6 @@ def getDepth():
         ave_pressure += press
         ave_temp += temp
         ave_depth += depth
-        time.sleep(0.03)
+        time.sleep(0.01)
     #print("pressure=%6.2f mBar, temp=%4.2f C, depth=%4.1f cm"% (ave_pressure/30.0, ave_temp/30.0, ave_depth/30.0))
-    return ave_depth/30.0
+    return ave_depth/6.0
